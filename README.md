@@ -4,6 +4,32 @@
 
 这垃圾人生一秒也不想待了？立即重开！
 
+## 🌟 新增：Web版本
+
+现在支持独立的Web版本！无需NoneBot环境，直接通过浏览器玩游戏！
+
+### 快速开始 Web 版
+
+```bash
+# 安装依赖
+pip install -r requirements-web.txt
+
+# 启动服务器
+python run_web.py
+
+# 或使用启动脚本
+./start_web.sh          # Linux/Mac
+start_web.bat           # Windows
+```
+
+访问 http://localhost:8000 即可开始游戏！
+
+📖 详细的Web版使用说明请查看 [WEB_README.md](WEB_README.md)
+
+---
+
+## NoneBot 插件版本
+
 
 ### 安装
 

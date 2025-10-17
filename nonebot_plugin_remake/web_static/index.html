@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人生重开模拟器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .step {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .step-title {
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .talent-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .talent-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f9f9f9;
+        }
+
+        .talent-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .talent-card.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea15, #764ba215);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .talent-card.grade-1 { border-left: 5px solid #95a5a6; }
+        .talent-card.grade-2 { border-left: 5px solid #27ae60; }
+        .talent-card.grade-3 { border-left: 5px solid #3498db; }
+        .talent-card.grade-4 { border-left: 5px solid #9b59b6; }
+        .talent-card.grade-5 { border-left: 5px solid #f39c12; }
+
+        .talent-name {
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .talent-desc {
+            font-size: 0.9em;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .property-panel {
+            background: #f5f5f5;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .property-item {
+            margin-bottom: 20px;
+        }
+
+        .property-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .property-input {
+            width: 100%;
+            height: 40px;
+            border-radius: 5px;
+            border: 2px solid #ddd;
+            padding: 0 15px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .property-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .property-slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            outline: none;
+            -webkit-appearance: none;
+            background: #ddd;
+        }
+
+        .property-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+
+        .property-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            flex: 1;
+            min-width: 150px;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .result-container {
+            margin-top: 20px;
+        }
+
+        .result-image {
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .result-text {
+            max-height: 600px;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .result-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .result-age {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .result-event {
+            color: #666;
+            line-height: 1.6;
+            margin: 5px 0;
+        }
+
+        .summary-panel {
+            background: linear-gradient(135deg, #667eea15, #764ba215);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .summary-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+        }
+
+        .summary-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .summary-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .summary-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+
+        .error-box {
+            background: #ffebee;
+            border-left: 4px solid #f44336;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎲 人生重开模拟器</h1>
+            <p>重新体验不同的人生，做出不同的选择</p>
+        </div>
+
+        <div class="content">
+            <!-- 步骤1: 开始游戏 -->
+            <div class="step active" id="step-start">
+                <h2 class="step-title">欢迎来到人生重开模拟器</h2>
+                <div class="info-box">
+                    <p>在这里，你可以重新体验人生，选择不同的天赋，分配不同的属性，看看会有怎样不同的人生轨迹。</p>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="startGame()">开始新游戏</button>
+                </div>
+            </div>
+
+            <!-- 步骤2: 选择天赋 -->
+            <div class="step" id="step-talents">
+                <h2 class="step-title">第一步：选择天赋 (请选择3个)</h2>
+                <div class="info-box" id="talent-info">
+                    <p>已选择 <span id="selected-count">0</span> / 3 个天赋</p>
+                </div>
+                <div class="talent-grid" id="talent-grid"></div>
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="randomSelectTalents()">随机选择</button>
+                    <button class="btn btn-primary" id="confirm-talents-btn" disabled onclick="confirmTalents()">确认选择</button>
+                </div>
+            </div>
+
+            <!-- 步骤3: 分配属性 -->
+            <div class="step" id="step-properties">
+                <h2 class="step-title">第二步：分配属性点</h2>
+                <div class="info-box">
+                    <p>可用属性点：<span id="total-points">20</span> | 剩余：<span id="remaining-points">20</span></p>
+                </div>
+                <div class="property-panel">
+                    <div class="property-item">
+                        <div class="property-label">
+                            <span>颜值 (CHR)</span>
+                            <span id="chr-value">0</span>
+                        </div>
+                        <input type="range" class="property-slider" id="chr-slider" min="0" max="10" value="0" oninput="updateProperty('CHR')">
+                    </div>
+                    <div class="property-item">
+                        <div class="property-label">
+                            <span>智力 (INT)</span>
+                            <span id="int-value">0</span>
+                        </div>
+                        <input type="range" class="property-slider" id="int-slider" min="0" max="10" value="0" oninput="updateProperty('INT')">
+                    </div>
+                    <div class="property-item">
+                        <div class="property-label">
+                            <span>体质 (STR)</span>
+                            <span id="str-value">0</span>
+                        </div>
+                        <input type="range" class="property-slider" id="str-slider" min="0" max="10" value="0" oninput="updateProperty('STR')">
+                    </div>
+                    <div class="property-item">
+                        <div class="property-label">
+                            <span>家境 (MNY)</span>
+                            <span id="mny-value">0</span>
+                        </div>
+                        <input type="range" class="property-slider" id="mny-slider" min="0" max="10" value="0" oninput="updateProperty('MNY')">
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="randomAllocateProperty()">随机分配</button>
+                    <button class="btn btn-primary" id="confirm-property-btn" onclick="confirmProperty()">确认分配</button>
+                </div>
+            </div>
+
+            <!-- 步骤4: 运行模拟 -->
+            <div class="step" id="step-running">
+                <h2 class="step-title">你的人生正在重开...</h2>
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 20px; color: #666;">正在生成你的人生轨迹...</p>
+                </div>
+            </div>
+
+            <!-- 步骤5: 显示结果 -->
+            <div class="step" id="step-result">
+                <h2 class="step-title">你的人生结果</h2>
+                
+                <div class="summary-panel" id="summary-panel"></div>
+                
+                <div class="result-container">
+                    <img class="result-image" id="result-image" style="display: none;">
+                    <div class="result-text" id="result-text"></div>
+                </div>
+                
+                <div class="button-group">
+                    <button class="btn btn-success" onclick="downloadImage()">下载图片</button>
+                    <button class="btn btn-primary" onclick="restartGame()">重新开始</button>
+                </div>
+            </div>
+
+            <div class="error-box" id="error-box" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        let sessionId = null;
+        let currentTalents = [];
+        let selectedTalentIds = [];
+        let totalProperty = 20;
+        let properties = { CHR: 0, INT: 0, STR: 0, MNY: 0 };
+        let gameResults = null;
+        let gameSummary = null;
+
+        function showStep(stepId) {
+            document.querySelectorAll('.step').forEach(step => {
+                step.classList.remove('active');
+            });
+            document.getElementById(stepId).classList.add('active');
+        }
+
+        function showError(message) {
+            const errorBox = document.getElementById('error-box');
+            errorBox.textContent = message;
+            errorBox.style.display = 'block';
+            setTimeout(() => {
+                errorBox.style.display = 'none';
+            }, 5000);
+        }
+
+        async function startGame() {
+            try {
+                const response = await fetch('/api/start');
+                const data = await response.json();
+                
+                sessionId = data.session_id;
+                currentTalents = data.talents;
+                totalProperty = data.total_property;
+                
+                renderTalents();
+                showStep('step-talents');
+            } catch (error) {
+                showError('开始游戏失败: ' + error.message);
+            }
+        }
+
+        function renderTalents() {
+            const grid = document.getElementById('talent-grid');
+            grid.innerHTML = '';
+            
+            currentTalents.forEach(talent => {
+                const card = document.createElement('div');
+                card.className = `talent-card grade-${talent.grade}`;
+                card.dataset.id = talent.id;
+                card.innerHTML = `
+                    <div class="talent-name">${talent.name}</div>
+                    <div class="talent-desc">${talent.description}</div>
+                `;
+                card.onclick = () => toggleTalent(talent.id, card);
+                grid.appendChild(card);
+            });
+        }
+
+        function toggleTalent(id, element) {
+            if (selectedTalentIds.includes(id)) {
+                selectedTalentIds = selectedTalentIds.filter(tid => tid !== id);
+                element.classList.remove('selected');
+            } else {
+                if (selectedTalentIds.length >= 3) {
+                    showError('只能选择3个天赋');
+                    return;
+                }
+                selectedTalentIds.push(id);
+                element.classList.add('selected');
+            }
+            
+            document.getElementById('selected-count').textContent = selectedTalentIds.length;
+            document.getElementById('confirm-talents-btn').disabled = selectedTalentIds.length !== 3;
+        }
+
+        async function randomSelectTalents() {
+            try {
+                const response = await fetch('/api/random-talents', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId })
+                });
+                
+                const data = await response.json();
+                
+                // 清除之前的选择
+                document.querySelectorAll('.talent-card').forEach(card => {
+                    card.classList.remove('selected');
+                });
+                
+                selectedTalentIds = data.talent_ids;
+                totalProperty = data.total_property;
+                
+                // 高亮选中的天赋
+                selectedTalentIds.forEach(id => {
+                    const card = document.querySelector(`[data-id="${id}"]`);
+                    if (card) card.classList.add('selected');
+                });
+                
+                document.getElementById('selected-count').textContent = selectedTalentIds.length;
+                document.getElementById('confirm-talents-btn').disabled = false;
+            } catch (error) {
+                showError('随机选择失败: ' + error.message);
+            }
+        }
+
+        async function confirmTalents() {
+            try {
+                const response = await fetch('/api/select-talents', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        session_id: sessionId,
+                        talent_ids: selectedTalentIds
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail);
+                }
+                
+                const data = await response.json();
+                totalProperty = data.total_property;
+                
+                document.getElementById('total-points').textContent = totalProperty;
+                document.getElementById('remaining-points').textContent = totalProperty;
+                
+                // 更新滑块最大值
+                const maxPerProp = Math.min(10, totalProperty);
+                ['chr', 'int', 'str', 'mny'].forEach(prop => {
+                    document.getElementById(`${prop}-slider`).max = maxPerProp;
+                });
+                
+                showStep('step-properties');
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        function updateProperty(propName) {
+            const slider = document.getElementById(`${propName.toLowerCase()}-slider`);
+            const value = parseInt(slider.value);
+            properties[propName] = value;
+            
+            document.getElementById(`${propName.toLowerCase()}-value`).textContent = value;
+            
+            const sum = Object.values(properties).reduce((a, b) => a + b, 0);
+            const remaining = totalProperty - sum;
+            document.getElementById('remaining-points').textContent = remaining;
+            
+            // 如果超过总点数，调整当前属性
+            if (remaining < 0) {
+                properties[propName] = value + remaining;
+                slider.value = properties[propName];
+                document.getElementById(`${propName.toLowerCase()}-value`).textContent = properties[propName];
+                document.getElementById('remaining-points').textContent = 0;
+            }
+        }
+
+        async function randomAllocateProperty() {
+            try {
+                const response = await fetch('/api/random-property', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId })
+                });
+                
+                const data = await response.json();
+                properties = data.properties;
+                
+                // 更新UI
+                ['CHR', 'INT', 'STR', 'MNY'].forEach(prop => {
+                    const value = properties[prop];
+                    document.getElementById(`${prop.toLowerCase()}-slider`).value = value;
+                    document.getElementById(`${prop.toLowerCase()}-value`).textContent = value;
+                });
+                
+                document.getElementById('remaining-points').textContent = 0;
+            } catch (error) {
+                showError('随机分配失败: ' + error.message);
+            }
+        }
+
+        async function confirmProperty() {
+            const sum = Object.values(properties).reduce((a, b) => a + b, 0);
+            
+            if (sum !== totalProperty) {
+                showError(`属性点必须全部分配完，当前还剩 ${totalProperty - sum} 点`);
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/allocate-property', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        session_id: sessionId,
+                        properties: properties
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail);
+                }
+                
+                showStep('step-running');
+                await runLifeSimulation();
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        async function runLifeSimulation() {
+            try {
+                const response = await fetch('/api/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId })
+                });
+                
+                const data = await response.json();
+                gameResults = data.results;
+                gameSummary = data.summary;
+                
+                await loadResultImage();
+                renderResults();
+                showStep('step-result');
+            } catch (error) {
+                showError('运行模拟失败: ' + error.message);
+                showStep('step-properties');
+            }
+        }
+
+        async function loadResultImage() {
+            try {
+                const response = await fetch(`/api/image/${sessionId}`);
+                const data = await response.json();
+                
+                const img = document.getElementById('result-image');
+                img.src = data.image;
+                img.style.display = 'block';
+            } catch (error) {
+                console.error('加载图片失败:', error);
+            }
+        }
+
+        function renderResults() {
+            // 渲染总结
+            const summaryPanel = document.getElementById('summary-panel');
+            summaryPanel.innerHTML = `
+                <div class="summary-title">人生总结</div>
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <div class="summary-label">享年</div>
+                        <div class="summary-value">${gameSummary.AGE}岁</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">颜值</div>
+                        <div class="summary-value">${gameSummary.CHR}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">智力</div>
+                        <div class="summary-value">${gameSummary.INT}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">体质</div>
+                        <div class="summary-value">${gameSummary.STR}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">家境</div>
+                        <div class="summary-value">${gameSummary.MNY}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">快乐</div>
+                        <div class="summary-value">${gameSummary.SPR}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">总评</div>
+                        <div class="summary-value">${gameSummary.SUM}</div>
+                    </div>
+                </div>
+            `;
+            
+            // 渲染详细结果
+            const resultText = document.getElementById('result-text');
+            resultText.innerHTML = '';
+            
+            gameResults.forEach(result => {
+                const item = document.createElement('div');
+                item.className = 'result-item';
+                
+                const ageInfo = `【${result.property.AGE}岁/颜${result.property.CHR}智${result.property.INT}体${result.property.STR}钱${result.property.MNY}乐${result.property.SPR}】`;
+                const events = result.event_log.concat(result.talent_log).join('<br>');
+                
+                item.innerHTML = `
+                    <div class="result-age">${ageInfo}</div>
+                    <div class="result-event">${events}</div>
+                `;
+                
+                resultText.appendChild(item);
+            });
+        }
+
+        function downloadImage() {
+            const img = document.getElementById('result-image');
+            const link = document.createElement('a');
+            link.href = img.src;
+            link.download = '我的人生.jpg';
+            link.click();
+        }
+
+        async function restartGame() {
+            try {
+                const response = await fetch('/api/restart', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId })
+                });
+                
+                const data = await response.json();
+                
+                sessionId = data.session_id;
+                currentTalents = data.talents;
+                totalProperty = data.total_property;
+                selectedTalentIds = [];
+                properties = { CHR: 0, INT: 0, STR: 0, MNY: 0 };
+                
+                // 重置属性滑块
+                ['chr', 'int', 'str', 'mny'].forEach(prop => {
+                    document.getElementById(`${prop}-slider`).value = 0;
+                    document.getElementById(`${prop}-value`).textContent = 0;
+                });
+                
+                renderTalents();
+                showStep('step-talents');
+            } catch (error) {
+                showError('重启游戏失败: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

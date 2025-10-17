@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./nonebot_plugin_remake/resources:/app/nonebot_plugin_remake/resources
+    environment:
+      - TZ=Asia/Shanghai
+    restart: unless-stopped
+    container_name: remake-web
