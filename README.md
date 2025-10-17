@@ -24,7 +24,10 @@ start_web.bat           # Windows
 
 访问 http://localhost:8000 即可开始游戏！
 
-📖 详细的Web版使用说明请查看 [WEB_README.md](WEB_README.md)
+📖 详细文档：
+- [WEB_README.md](WEB_README.md) - 详细使用说明
+- [QUICKSTART.md](QUICKSTART.md) - 快速开始指南
+- [WEB_SETUP.md](WEB_SETUP.md) - 安装和故障排除
 
 ---
 
