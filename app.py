@@ -65,6 +65,7 @@ def run_life_simulation(
     int_val: Optional[int] = None,
     str_val: Optional[int] = None,
     mny: Optional[int] = None,
+    preselected_talents: Optional[list] = None,
 ) -> BytesIO:
     """
     运行人生模拟
@@ -74,36 +75,38 @@ def run_life_simulation(
         life = Life()
         life.load()
 
-        # 随机生成10个天赋供选择
-        all_talents = life.rand_talents(10)
-
         # 选择天赋
-        if talent_ids is None:
-            # 随机选择3个不冲突的天赋
-            while True:
-                nums = random.sample(range(10), 3)
-                nums.sort()
-                talents_selected = [all_talents[n] for n in nums]
+        if preselected_talents is not None:
+            talents_selected = preselected_talents
+        else:
+            # 随机生成10个天赋供选择
+            all_talents = life.rand_talents(10)
+            if talent_ids is None:
+                # 随机选择3个不冲突的天赋
+                while True:
+                    nums = random.sample(range(10), 3)
+                    nums.sort()
+                    talents_selected = [all_talents[n] for n in nums]
+                    # 检查天赋冲突
+                    has_conflict = False
+                    for i, t1 in enumerate(talents_selected):
+                        for t2 in talents_selected[i + 1 :]:
+                            if t1.exclusive_with(t2):
+                                has_conflict = True
+                                break
+                        if has_conflict:
+                            break
+                    if not has_conflict:
+                        break
+            else:
+                talents_selected = [all_talents[i] for i in talent_ids]
                 # 检查天赋冲突
-                has_conflict = False
                 for i, t1 in enumerate(talents_selected):
                     for t2 in talents_selected[i + 1 :]:
                         if t1.exclusive_with(t2):
-                            has_conflict = True
-                            break
-                    if has_conflict:
-                        break
-                if not has_conflict:
-                    break
-        else:
-            talents_selected = [all_talents[i] for i in talent_ids]
-            # 检查天赋冲突
-            for i, t1 in enumerate(talents_selected):
-                for t2 in talents_selected[i + 1 :]:
-                    if t1.exclusive_with(t2):
-                        raise ValueError(
-                            f'天赋"{t1.name}"和"{t2.name}"不能同时拥有'
-                        )
+                            raise ValueError(
+                                f'天赋"{t1.name}"和"{t2.name}"不能同时拥有'
+                            )
 
         life.set_talents(talents_selected)
         total_prop = life.total_property()
@@ -174,7 +177,7 @@ async def custom_life(request: CustomLifeRequest):
     根据指定的天赋和属性，返回人生重开结果图片
 
     参数:
-    - talent_ids: 选择的3个天赋ID（0-9），从 /talents-info 获取可用天赋
+    - talent_ids: 选择的3个天赋全局ID（来自数据集），可先调用 /talents-info 获取示例
     - chr: 颜值（0-10）
     - int: 智力（0-10）
     - str: 体质（0-10）
@@ -182,8 +185,27 @@ async def custom_life(request: CustomLifeRequest):
 
     注意：属性总和必须等于天赋提供的总属性点
     """
+    # 根据全局ID查找天赋
+    life_lookup = Life()
+    life_lookup.load()
+    id_map = {}
+    for grade_list in life_lookup.talent.talent_dict.values():
+        for t in grade_list:
+            id_map[t.id] = t
+
+    try:
+        talents_selected = [id_map[tid] for tid in request.talent_ids]
+    except KeyError:
+        raise HTTPException(status_code=400, detail="存在无效的天赋ID")
+
+    # 冲突检查
+    for i, t1 in enumerate(talents_selected):
+        for t2 in talents_selected[i + 1 :]:
+            if t1.exclusive_with(t2):
+                raise HTTPException(status_code=400, detail=f'天赋"{t1.name}"和"{t2.name}"不能同时拥有')
+
     img = run_life_simulation(
-        talent_ids=request.talent_ids,
+        preselected_talents=talents_selected,
         chr=request.chr,
         int_val=request.int_val,
         str_val=request.str_val,
@@ -242,7 +264,7 @@ async def random_talents_life(
         str_val = int(str_val * ratio)
         mny = total_prop - chr - int_val - str_val
 
-    img = run_life_simulation(talent_ids=nums, chr=chr, int_val=int_val, str_val=str_val, mny=mny)
+    img = run_life_simulation(preselected_talents=talents_selected, chr=chr, int_val=int_val, str_val=str_val, mny=mny)
     img.seek(0)
     return StreamingResponse(img, media_type="image/jpeg")
 
@@ -251,19 +273,36 @@ async def random_talents_life(
 async def random_attributes_life(talent_ids: list[int]):
     """
     固定天赋，随机属性
-    使用指定的天赋，但随机分配属性
+    使用指定的天赋（使用全局天赋ID），但随机分配属性
 
     参数:
-    - talent_ids: 选择的3个天赋ID（0-9），用逗号分隔，例如: ?talent_ids=0&talent_ids=1&talent_ids=2
+    - talent_ids: 选择的3个天赋全局ID（来自数据集），例如: ?talent_ids=101&talent_ids=205&talent_ids=309
     """
     if len(talent_ids) != 3:
         raise HTTPException(status_code=400, detail="必须选择3个天赋")
     if len(set(talent_ids)) != 3:
         raise HTTPException(status_code=400, detail="天赋ID不能重复")
-    if any(tid < 0 or tid >= 10 for tid in talent_ids):
-        raise HTTPException(status_code=400, detail="天赋ID必须在0-9之间")
 
-    img = run_life_simulation(talent_ids=talent_ids)
+    # 根据全局ID查找天赋
+    life_lookup = Life()
+    life_lookup.load()
+    id_map = {}
+    for grade_list in life_lookup.talent.talent_dict.values():
+        for t in grade_list:
+            id_map[t.id] = t
+
+    try:
+        talents_selected = [id_map[tid] for tid in talent_ids]
+    except KeyError:
+        raise HTTPException(status_code=400, detail="存在无效的天赋ID")
+
+    # 冲突检查
+    for i, t1 in enumerate(talents_selected):
+        for t2 in talents_selected[i + 1 :]:
+            if t1.exclusive_with(t2):
+                raise HTTPException(status_code=400, detail=f'天赋"{t1.name}"和"{t2.name}"不能同时拥有')
+
+    img = run_life_simulation(preselected_talents=talents_selected)
     img.seek(0)
     return StreamingResponse(img, media_type="image/jpeg")
 
@@ -271,8 +310,8 @@ async def random_attributes_life(talent_ids: list[int]):
 @app.get("/talents-info", tags=["信息"])
 async def talents_info():
     """
-    获取一组随机天赋信息
-    用于查看可用的天赋选项
+    获取一组随机天赋信息（示例）
+    提示：自定义接口使用的是全局天赋ID（talent.id）
     """
     try:
         life = Life()
@@ -280,19 +319,20 @@ async def talents_info():
         talents = life.rand_talents(10)
 
         talents_data = []
-        for i, talent in enumerate(talents):
+        for idx, t in enumerate(talents):
             talents_data.append(
                 {
-                    "id": i,
-                    "name": talent.name,
-                    "description": talent.description,
-                    "grade": talent.grade,
+                    "idx": idx,          # 在本次列表中的位置（仅展示用途）
+                    "id": t.id,          # 全局天赋ID（用于 /custom 与 /random-attributes）
+                    "name": t.name,
+                    "description": t.description,
+                    "grade": t.grade,
                 }
             )
 
         return {
             "talents": talents_data,
-            "note": "每次请求会生成不同的随机天赋列表",
+            "note": "注意：请使用返回的全局天赋ID(id) 调用 /custom 或 /random-attributes",
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取天赋信息失败: {str(e)}")
