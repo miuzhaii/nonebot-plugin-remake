@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人生重开模拟器 API 演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .control-group {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+        }
+
+        .control-group h2 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #495057;
+            font-weight: 500;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .talents-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .talent-item {
+            padding: 8px;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .talent-item:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .talent-item.selected {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+
+        .talent-item h4 {
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .talent-item p {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        #result {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        #result img {
+            max-width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .api-url {
+            font-family: monospace;
+            background: #f8f9fa;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎲 人生重开模拟器 API 演示</h1>
+
+        <div class="controls">
+            <!-- 完全随机 -->
+            <div class="control-group">
+                <h2>🎰 完全随机</h2>
+                <p>随机天赋和属性</p>
+                <button onclick="generateRandomLife()">开始随机人生</button>
+                <div class="api-url">GET /random</div>
+            </div>
+
+            <!-- 随机天赋 -->
+            <div class="control-group">
+                <h2>🎨 随机天赋</h2>
+                <p>随机天赋，自定义属性</p>
+                <div class="form-group">
+                    <label>颜值 (0-10):</label>
+                    <input type="number" id="rt-chr" min="0" max="10" value="5">
+                </div>
+                <div class="form-group">
+                    <label>智力 (0-10):</label>
+                    <input type="number" id="rt-int" min="0" max="10" value="5">
+                </div>
+                <div class="form-group">
+                    <label>体质 (0-10):</label>
+                    <input type="number" id="rt-str" min="0" max="10" value="5">
+                </div>
+                <div class="form-group">
+                    <label>家境 (0-10):</label>
+                    <input type="number" id="rt-mny" min="0" max="10" value="5">
+                </div>
+                <button onclick="generateRandomTalents()">开始随机天赋人生</button>
+                <div class="api-url">GET /random-talents</div>
+            </div>
+
+            <!-- 自定义人生 -->
+            <div class="control-group" style="grid-column: 1 / -1;">
+                <h2>⚙️ 自定义人生</h2>
+                <button onclick="loadTalents()" style="margin-bottom: 15px;">加载可用天赋</button>
+                <div id="talents-container" class="talents-grid"></div>
+                <div style="margin-top: 15px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                    <div class="form-group">
+                        <label>颜值:</label>
+                        <input type="number" id="custom-chr" min="0" max="10" value="5">
+                    </div>
+                    <div class="form-group">
+                        <label>智力:</label>
+                        <input type="number" id="custom-int" min="0" max="10" value="5">
+                    </div>
+                    <div class="form-group">
+                        <label>体质:</label>
+                        <input type="number" id="custom-str" min="0" max="10" value="5">
+                    </div>
+                    <div class="form-group">
+                        <label>家境:</label>
+                        <input type="number" id="custom-mny" min="0" max="10" value="5">
+                    </div>
+                </div>
+                <button onclick="generateCustomLife()">开始自定义人生</button>
+                <div class="api-url">POST /custom</div>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>正在重开人生...</p>
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        let selectedTalents = [];
+        let availableTalents = [];
+
+        function showLoading() {
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('error').classList.remove('show');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('show');
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+            hideLoading();
+        }
+
+        function displayImage(blob) {
+            const url = URL.createObjectURL(blob);
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `
+                <h2>你的人生结果</h2>
+                <img src="${url}" alt="人生结果">
+                <p style="margin-top: 15px;">
+                    <a href="${url}" download="my_life.jpg" style="color: #667eea; text-decoration: none;">
+                        📥 下载图片
+                    </a>
+                </p>
+            `;
+            hideLoading();
+        }
+
+        async function generateRandomLife() {
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE}/random`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+                const blob = await response.blob();
+                displayImage(blob);
+            } catch (error) {
+                showError(`生成失败: ${error.message}`);
+            }
+        }
+
+        async function generateRandomTalents() {
+            showLoading();
+            try {
+                const chr = document.getElementById('rt-chr').value;
+                const int_val = document.getElementById('rt-int').value;
+                const str_val = document.getElementById('rt-str').value;
+                const mny = document.getElementById('rt-mny').value;
+
+                const response = await fetch(
+                    `${API_BASE}/random-talents?chr=${chr}&int_val=${int_val}&str_val=${str_val}&mny=${mny}`
+                );
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+                const blob = await response.blob();
+                displayImage(blob);
+            } catch (error) {
+                showError(`生成失败: ${error.message}`);
+            }
+        }
+
+        async function loadTalents() {
+            try {
+                const response = await fetch(`${API_BASE}/talents-info`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                const data = await response.json();
+                availableTalents = data.talents;
+                selectedTalents = [];
+
+                const container = document.getElementById('talents-container');
+                container.innerHTML = availableTalents.map(talent => `
+                    <div class="talent-item" data-id="${talent.id}" onclick="toggleTalent(${talent.id})">
+                        <h4>${talent.id}. ${talent.name}</h4>
+                        <p>${talent.description}</p>
+                    </div>
+                `).join('');
+            } catch (error) {
+                showError(`加载天赋失败: ${error.message}`);
+            }
+        }
+
+        function toggleTalent(id) {
+            const index = selectedTalents.indexOf(id);
+            if (index > -1) {
+                selectedTalents.splice(index, 1);
+            } else {
+                if (selectedTalents.length >= 3) {
+                    showError('最多只能选择3个天赋！');
+                    return;
+                }
+                selectedTalents.push(id);
+            }
+
+            // 更新UI
+            document.querySelectorAll('.talent-item').forEach(item => {
+                const itemId = parseInt(item.dataset.id);
+                if (selectedTalents.includes(itemId)) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+
+            document.getElementById('error').classList.remove('show');
+        }
+
+        async function generateCustomLife() {
+            if (selectedTalents.length !== 3) {
+                showError('请选择3个天赋！');
+                return;
+            }
+
+            showLoading();
+            try {
+                const data = {
+                    talent_ids: selectedTalents,
+                    chr: parseInt(document.getElementById('custom-chr').value),
+                    int: parseInt(document.getElementById('custom-int').value),
+                    str: parseInt(document.getElementById('custom-str').value),
+                    mny: parseInt(document.getElementById('custom-mny').value)
+                };
+
+                const response = await fetch(`${API_BASE}/custom`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+
+                const blob = await response.blob();
+                displayImage(blob);
+            } catch (error) {
+                showError(`生成失败: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>

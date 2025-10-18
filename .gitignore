@@ -1,3 +1,15 @@
 *__pycache__/
 dist/
 .vscode/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+.env
+*.jpg
+*.jpeg
+*.png
+test_*.jpg
+*.log
+.DS_Store
