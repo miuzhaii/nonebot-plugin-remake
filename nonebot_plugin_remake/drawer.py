@@ -403,3 +403,10 @@ def save_jpg(img: IMG) -> BytesIO:
     output = BytesIO()
     img.convert("RGB").save(output, format="JPEG")
     return output
+
+
+def save_png(img: IMG) -> BytesIO:
+    output = BytesIO()
+    # 保留透明度，使用 PNG 格式
+    img.save(output, format="PNG")
+    return output

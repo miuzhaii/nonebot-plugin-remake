@@ -15,7 +15,7 @@ from fastapi import FastAPI, HTTPException, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from nonebot_plugin_remake.drawer import draw_life, save_jpg
+from nonebot_plugin_remake.drawer import draw_life, save_png
 from nonebot_plugin_remake.life import Life
 from nonebot_plugin_remake.property import Summary
 
@@ -55,8 +55,8 @@ def create_life_image(
     results,
     summary,
 ) -> BytesIO:
-    """创建人生图片"""
-    return save_jpg(draw_life(talents, init_prop, results, summary))
+    """创建人生图片(PNG)"""
+    return save_png(draw_life(talents, init_prop, results, summary))
 
 
 def run_life_simulation(
@@ -167,7 +167,7 @@ async def random_life():
     """
     img = run_life_simulation()
     img.seek(0)
-    return StreamingResponse(img, media_type="image/jpeg")
+    return StreamingResponse(img, media_type="image/png")
 
 
 @app.post("/custom", tags=["人生模拟"], response_class=StreamingResponse)
@@ -212,7 +212,7 @@ async def custom_life(request: CustomLifeRequest):
         mny=request.mny,
     )
     img.seek(0)
-    return StreamingResponse(img, media_type="image/jpeg")
+    return StreamingResponse(img, media_type="image/png")
 
 
 @app.get("/random-talents", tags=["人生模拟"], response_class=StreamingResponse)
@@ -266,7 +266,7 @@ async def random_talents_life(
 
     img = run_life_simulation(preselected_talents=talents_selected, chr=chr, int_val=int_val, str_val=str_val, mny=mny)
     img.seek(0)
-    return StreamingResponse(img, media_type="image/jpeg")
+    return StreamingResponse(img, media_type="image/png")
 
 
 @app.get("/random-attributes", tags=["人生模拟"], response_class=StreamingResponse)
@@ -304,7 +304,7 @@ async def random_attributes_life(talent_ids: list[int]):
 
     img = run_life_simulation(preselected_talents=talents_selected)
     img.seek(0)
-    return StreamingResponse(img, media_type="image/jpeg")
+    return StreamingResponse(img, media_type="image/png")
 
 
 @app.get("/talents-info", tags=["信息"])
